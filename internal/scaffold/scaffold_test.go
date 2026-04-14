@@ -278,8 +278,8 @@ func TestRenderAll_MissingKey(t *testing.T) {
 func makeFullTemplate(t *testing.T) *tmpl.Template {
 	t.Helper()
 	dir := makeTemplateDir(t, map[string]string{
-		"template.toml":          "[template]\nname=\"cloud-run-service\"\n",
-		"terraform/main.tf.tmpl": `project = "{{ .Topology.Environments.dev }}"` + "\nname = \"{{ .Inputs.service_name }}\"",
+		"template.toml":              "[template]\nname=\"cloud-run-service\"\n",
+		"terraform/main.tf.tmpl":     `project = "{{ .Topology.Environments.dev }}"` + "\nname = \"{{ .Inputs.service_name }}\"",
 		"cloudbuild/build.yaml.tmpl": `steps:\n- name: "{{ .Topology.Shared.ArtifactRegistry.Location }}-docker.pkg.dev/{{ .Topology.Shared.Project }}/{{ .Topology.Shared.ArtifactRegistry.Repository }}/{{ .Inputs.service_name }}"`,
 	})
 	return &tmpl.Template{

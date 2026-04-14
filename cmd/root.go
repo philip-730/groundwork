@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	configFlag string     // --config override
+	configFlag string         // --config override
 	cfg        *config.Config // loaded once in PersistentPreRunE, available to all subcommands
 )
 

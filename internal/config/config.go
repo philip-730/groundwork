@@ -31,8 +31,8 @@ const filename = "groundwork.toml"
 
 // Config is the top-level structure of groundwork.toml.
 type Config struct {
-	Workspace  Workspace          `toml:"workspace"`
-	Registries []Registry         `toml:"registries"`
+	Workspace  Workspace           `toml:"workspace"`
+	Registries []Registry          `toml:"registries"`
 	Topologies map[string]Topology `toml:"topologies"`
 
 	// Path is the absolute path of the file that was loaded.
@@ -60,8 +60,8 @@ type Topology struct {
 
 // SharedConfig holds references to shared GCP infrastructure.
 type SharedConfig struct {
-	Project          string                `toml:"project"`
-	Region           string                `toml:"region"`
+	Project          string                 `toml:"project"`
+	Region           string                 `toml:"region"`
 	ArtifactRegistry ArtifactRegistryConfig `toml:"artifact_registry"`
 }
 

@@ -1,0 +1,21 @@
+[workspace]
+name = "my-org"
+
+[[registries]]
+name = "groundwork-registry"
+url  = "https://github.com/philip-730/groundwork-registry"
+
+[topologies.primary]
+default = true
+
+  [topologies.primary.environments]
+  dev  = "my-org-dev"
+  prod = "my-org-prod"
+
+  [topologies.primary.shared]
+  project = "my-org-shared"
+  region  = "us-east1"
+
+    [topologies.primary.shared.artifact_registry]
+    location   = "us-east1"
+    repository = "my-org-images"

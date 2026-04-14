@@ -10,6 +10,9 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        devGroundwork = pkgs.writeShellScriptBin "groundwork" ''
+          exec go run "$GROUNDWORK_SRC" "$@"
+        '';
       in
       {
         # nix build
@@ -18,8 +21,9 @@
           version = "0.1.0";
           src = ./.;
 
-          # vendor/ is committed — no hash needed.
-          vendorHash = null;
+          vendorHash = "sha256-n58Qmiv3gik1qkuXQFbQ+soeOQtUz1dUocEAJepqp/E=";
+
+          nativeBuildInputs = [ pkgs.git ];
 
           meta = with pkgs.lib; {
             description = "Topology-aware GCP service scaffolder";
@@ -42,9 +46,13 @@
 
             # Linting
             golangci-lint
+
+            # Dev wrapper: `groundwork` runs from source
+            devGroundwork
           ];
 
           shellHook = ''
+            export GROUNDWORK_SRC="$(pwd)"
             echo "groundwork dev shell"
             echo "  go test ./...     — run tests"
             echo "  go build -o gw .  — build binary"

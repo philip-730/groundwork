@@ -1,0 +1,31 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - us-east1-docker.pkg.dev/my-org-shared/my-org-images/foobar-service:$COMMIT_SHA
+      - -t
+      - us-east1-docker.pkg.dev/my-org-shared/my-org-images/foobar-service:latest
+      - .
+
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - us-east1-docker.pkg.dev/my-org-shared/my-org-images/foobar-service
+
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - foobar-service
+      - --image=us-east1-docker.pkg.dev/my-org-shared/my-org-images/foobar-service:$COMMIT_SHA
+      - --region=us-east1
+      - --project=my-org-dev
+
+images:
+  - us-east1-docker.pkg.dev/my-org-shared/my-org-images/foobar-service
+
+options:
+  logging: CLOUD_LOGGING_ONLY
