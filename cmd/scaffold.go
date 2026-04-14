@@ -2,7 +2,11 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/philip-730/groundwork/internal/registry"
+	"github.com/philip-730/groundwork/internal/scaffold"
+	tmpl "github.com/philip-730/groundwork/internal/template"
 	"github.com/spf13/cobra"
 )
 
@@ -18,15 +22,42 @@ var scaffoldCmd = &cobra.Command{
 	Short: "Scaffold a new service from a template",
 	Long: `Scaffold generates files for a service from the named template.
 
-It prompts for required inputs, resolves topology values, previews the
-files to be written, asks for confirmation, then writes output.`,
+Steps:
+  1. Pull the template from the local registry cache
+  2. Prompt for required inputs not supplied via --var
+  3. Resolve topology values (project IDs, shared resource references)
+  4. Preview files to be written
+  5. Ask for confirmation
+  6. Write files to the output directory
+
+Run 'groundwork registry sync' first if you haven't already.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		template := args[0]
-		fmt.Printf("scaffold: template=%s topology=%s out=%s dry-run=%v vars=%v\n",
-			template, scaffoldTopology, scaffoldOut, scaffoldDryRun, scaffoldVars)
-		fmt.Println("(not yet implemented)")
-		return nil
+		templateName := args[0]
+
+		cacheRoot, err := registry.CacheRoot()
+		if err != nil {
+			return err
+		}
+
+		templates, errs := tmpl.DiscoverAll(cfg.Registries, cacheRoot)
+		for _, e := range errs {
+			fmt.Fprintf(os.Stderr, "warning: %v\n", e)
+		}
+
+		t, err := tmpl.Find(templates, templateName)
+		if err != nil {
+			return err
+		}
+
+		return scaffold.Scaffold(cfg, t, scaffold.Options{
+			TopologyName: scaffoldTopology,
+			OutDir:       scaffoldOut,
+			DryRun:       scaffoldDryRun,
+			Vars:         scaffoldVars,
+			Stdin:        os.Stdin,
+			Stdout:       os.Stdout,
+		})
 	},
 }
 
