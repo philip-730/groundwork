@@ -6,3 +6,5 @@
 .direnv/
 result
 result-*
+
+vendor/
