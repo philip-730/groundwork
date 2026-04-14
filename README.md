@@ -19,39 +19,14 @@ No lockfile. No upgrade command. No drift detection.
 
 ## Quickstart
 
-```toml
-# groundwork.toml
-[workspace]
-name = "my-org"
-
-[[registries]]
-name = "internal"
-url  = "git@github.com:my-org/groundwork-registry"
-
-[topologies.primary]
-default = true
-
-  [topologies.primary.environments]
-  dev  = "my-org-dev"
-  prod = "my-org-prod"
-
-  [topologies.primary.shared]
-  project = "my-org-shared"
-  region  = "us-central1"
-
-    [topologies.primary.shared.artifact_registry]
-    location   = "us-central1"
-    repository = "my-org-images"
-```
-
 ```sh
-groundwork registry sync
+groundwork init https://github.com/my-org/groundwork-registry
 groundwork scaffold cloud-run-service --var service_name=payments-api
 ```
 
 ```
 Inputs:
-  region (string, default: us-central1):
+  region (string, default: us-east1):
 
 Files to be written to ./payments-api:
 
@@ -79,10 +54,11 @@ Groundwork solves boilerplate — you know what you're building, you just don't 
 
 ### Registry
 
-A git repo with a `templates/` directory. Your org maintains one. Groundwork clones it locally on `registry sync` and reads from the local cache.
+A git repo with a `templates/` directory and a `topologies.toml` at the root. Your org maintains one. Groundwork clones it locally on `init` or `registry sync` and reads from the local cache.
 
 ```
 my-registry/
+  topologies.toml
   templates/
     cloud-run-service/
       template.toml
@@ -95,7 +71,25 @@ my-registry/
 
 ### Topology
 
-A named mapping of your GCP org structure defined in `groundwork.toml`. Templates are topology-aware — they receive your actual project IDs and shared resource references at render time.
+A named mapping of your GCP org structure defined in `topologies.toml` at the root of the registry. Templates are topology-aware — they receive your actual project IDs and shared resource references at render time.
+
+```toml
+# topologies.toml
+[topologies.primary]
+default = true
+
+  [topologies.primary.environments]
+  dev  = "my-org-dev"
+  prod = "my-org-prod"
+
+  [topologies.primary.shared]
+  project = "my-org-shared"
+  region  = "us-east1"
+
+    [topologies.primary.shared.artifact_registry]
+    location   = "us-east1"
+    repository = "my-org-images"
+```
 
 What belongs in topology: environment project IDs, shared Artifact Registry, default region. Structural, stable, org-wide values that every service will need.
 
@@ -120,6 +114,8 @@ Non-`.tmpl` files are copied verbatim. `template.toml` is never included in outp
 ## CLI
 
 ```
+groundwork init <url> [--name name]
+
 groundwork scaffold <template> [flags]
 
   --topology  name    topology to use (defaults to the one marked default)
@@ -131,9 +127,6 @@ groundwork scaffold <template> [flags]
 groundwork registry sync
 groundwork registry list
 groundwork registry inspect <template>
-
-groundwork topology list
-groundwork topology validate
 ```
 
 ## template.toml reference
@@ -145,7 +138,7 @@ description = "HTTP service on Cloud Run with Cloud Build CI/CD."
 
 [inputs]
 service_name = { type = "string", required = true }
-region       = { type = "string", default = "us-central1" }
+region       = { type = "string", default = "us-east1" }
 
 [topology]
 requires = ["environments.dev", "environments.prod", "shared.artifact_registry"]

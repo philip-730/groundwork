@@ -13,7 +13,7 @@ import (
 var registryCmd = &cobra.Command{
 	Use:   "registry",
 	Short: "Manage template registries",
-	Long:  `Commands for syncing and inspecting template registries defined in groundwork.toml.`,
+	Long:  `Commands for syncing and inspecting template registries.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmd.Help()
 	},
@@ -22,14 +22,14 @@ var registryCmd = &cobra.Command{
 var registrySyncCmd = &cobra.Command{
 	Use:   "sync",
 	Short: "Clone or pull all configured registries",
-	Long: `Fetches the latest commits for every registry listed in groundwork.toml.
+	Long: `Fetches the latest commits for every configured registry.
 
 Each registry is cloned on first run and pulled on subsequent runs.
 Clones are stored in ~/.groundwork/registries/<name>.`,
 	Args: cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(cfg.Registries) == 0 {
-			fmt.Fprintln(os.Stderr, "no registries configured in groundwork.toml")
+			fmt.Fprintln(os.Stderr, "no registries configured — run: groundwork init <url>")
 			return nil
 		}
 

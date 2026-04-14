@@ -1,6 +1,6 @@
 package scaffold
 
-import "github.com/philip-730/groundwork/internal/config"
+import "github.com/philip-730/groundwork/internal/topology"
 
 // RenderContext is the data available to every template file during rendering.
 //
@@ -15,7 +15,7 @@ type RenderContext struct {
 	Topology TopologyContext
 }
 
-// TopologyContext mirrors config.Topology in a form convenient for template
+// TopologyContext mirrors topology.Topology in a form convenient for template
 // authors. Because text/template supports map key access via dot notation,
 // dynamic environment names (dev, prod, staging…) are reachable directly:
 // {{ .Topology.Environments.dev }}
@@ -38,9 +38,9 @@ type ArtifactRegistryContext struct {
 	Repository string
 }
 
-// BuildContext converts a topology name + config.Topology and the collected
+// BuildContext converts a topology name + topology.Topology and the collected
 // input values into a RenderContext ready for template execution.
-func BuildContext(inputs map[string]string, topologyName string, t config.Topology) RenderContext {
+func BuildContext(inputs map[string]string, topologyName string, t topology.Topology) RenderContext {
 	return RenderContext{
 		Inputs: inputs,
 		Topology: TopologyContext{

@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/philip-730/groundwork/internal/config"
+	"github.com/philip-730/groundwork/internal/topology"
 	tmpl "github.com/philip-730/groundwork/internal/template"
 )
 
@@ -28,7 +28,7 @@ type Options struct {
 }
 
 // Scaffold runs the full scaffold flow for the given template.
-func Scaffold(cfg *config.Config, t *tmpl.Template, opts Options) error {
+func Scaffold(topos *topology.File, t *tmpl.Template, opts Options) error {
 	// 1. Parse --var flags.
 	provided, err := ParseVars(opts.Vars)
 	if err != nil {
@@ -36,7 +36,7 @@ func Scaffold(cfg *config.Config, t *tmpl.Template, opts Options) error {
 	}
 
 	// 2. Resolve topology.
-	topoName, topo, err := resolveTopology(cfg, opts.TopologyName)
+	topoName, topo, err := resolveTopology(topos, opts.TopologyName)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func Scaffold(cfg *config.Config, t *tmpl.Template, opts Options) error {
 //	shared.artifact_registry
 //	shared.artifact_registry.location
 //	shared.artifact_registry.repository
-func ValidateTopologyKeys(topo config.Topology, required []string) error {
+func ValidateTopologyKeys(topo topology.Topology, required []string) error {
 	var missing []string
 	for _, key := range required {
 		if !topologyKeyPresent(topo, key) {
@@ -121,7 +121,7 @@ func ValidateTopologyKeys(topo config.Topology, required []string) error {
 	return nil
 }
 
-func topologyKeyPresent(topo config.Topology, key string) bool {
+func topologyKeyPresent(topo topology.Topology, key string) bool {
 	parts := strings.SplitN(key, ".", 2)
 	switch parts[0] {
 	case "environments":
@@ -139,7 +139,7 @@ func topologyKeyPresent(topo config.Topology, key string) bool {
 	return false
 }
 
-func sharedKeyPresent(shared config.SharedConfig, key string) bool {
+func sharedKeyPresent(shared topology.SharedConfig, key string) bool {
 	parts := strings.SplitN(key, ".", 2)
 	switch parts[0] {
 	case "project":
@@ -160,12 +160,12 @@ func sharedKeyPresent(shared config.SharedConfig, key string) bool {
 	return false
 }
 
-func resolveTopology(cfg *config.Config, name string) (string, config.Topology, error) {
+func resolveTopology(topos *topology.File, name string) (string, topology.Topology, error) {
 	if name != "" {
-		t, err := cfg.Topology(name)
+		t, err := topos.Topology(name)
 		return name, t, err
 	}
-	return cfg.DefaultTopology()
+	return topos.DefaultTopology()
 }
 
 func printDryRun(w io.Writer, files []RenderedFile) error {

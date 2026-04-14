@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/philip-730/groundwork/internal/config"
 	"github.com/philip-730/groundwork/internal/scaffold"
 	tmpl "github.com/philip-730/groundwork/internal/template"
+	"github.com/philip-730/groundwork/internal/topology"
 )
 
 // ── ParseVars ────────────────────────────────────────────────────────────────
@@ -99,7 +99,6 @@ func TestCollectInputs_UsesDefault(t *testing.T) {
 	tt := makeTemplate(map[string]tmpl.Input{
 		"region": {Type: "string", Default: "us-central1"},
 	})
-	// Empty line → accept default.
 	got, err := scaffold.CollectInputs(tt, map[string]string{}, strings.NewReader("\n"), &bytes.Buffer{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -122,13 +121,13 @@ func TestCollectInputs_RequiredStdinClosed(t *testing.T) {
 // ── BuildContext ─────────────────────────────────────────────────────────────
 
 func TestBuildContext(t *testing.T) {
-	topo := config.Topology{
+	topo := topology.Topology{
 		Environments: map[string]string{"dev": "my-dev", "prod": "my-prod"},
-		Shared: config.SharedConfig{
+		Shared: topology.SharedConfig{
 			Project: "my-shared",
-			Region:  "us-central1",
-			ArtifactRegistry: config.ArtifactRegistryConfig{
-				Location:   "us-central1",
+			Region:  "us-east1",
+			ArtifactRegistry: topology.ArtifactRegistryConfig{
+				Location:   "us-east1",
 				Repository: "my-images",
 			},
 		},
@@ -141,7 +140,7 @@ func TestBuildContext(t *testing.T) {
 	if ctx.Topology.Environments["dev"] != "my-dev" {
 		t.Errorf("env dev = %q", ctx.Topology.Environments["dev"])
 	}
-	if ctx.Topology.Shared.Region != "us-central1" {
+	if ctx.Topology.Shared.Region != "us-east1" {
 		t.Errorf("region = %q", ctx.Topology.Shared.Region)
 	}
 	if ctx.Topology.Shared.ArtifactRegistry.Repository != "my-images" {
@@ -154,14 +153,14 @@ func TestBuildContext(t *testing.T) {
 
 // ── ValidateTopologyKeys ─────────────────────────────────────────────────────
 
-func fullTopo() config.Topology {
-	return config.Topology{
+func fullTopo() topology.Topology {
+	return topology.Topology{
 		Environments: map[string]string{"dev": "my-dev", "prod": "my-prod"},
-		Shared: config.SharedConfig{
+		Shared: topology.SharedConfig{
 			Project: "my-shared",
-			Region:  "us-central1",
-			ArtifactRegistry: config.ArtifactRegistryConfig{
-				Location:   "us-central1",
+			Region:  "us-east1",
+			ArtifactRegistry: topology.ArtifactRegistryConfig{
+				Location:   "us-east1",
 				Repository: "my-images",
 			},
 		},
@@ -209,7 +208,6 @@ func TestValidateTopologyKeys_Empty(t *testing.T) {
 
 // ── RenderAll ────────────────────────────────────────────────────────────────
 
-// makeTemplateDir creates a fake template directory with given file contents.
 func makeTemplateDir(t *testing.T, files map[string]string) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -235,7 +233,7 @@ func TestRenderAll_Basic(t *testing.T) {
 	ctx := scaffold.BuildContext(
 		map[string]string{},
 		"primary",
-		config.Topology{Environments: map[string]string{"dev": "my-dev"}},
+		topology.Topology{Environments: map[string]string{"dev": "my-dev"}},
 	)
 	files, err := scaffold.RenderAll(dir, ctx)
 	if err != nil {
@@ -247,15 +245,12 @@ func TestRenderAll_Basic(t *testing.T) {
 		byPath[f.RelPath] = string(f.Content)
 	}
 
-	// template.toml must be excluded
 	if _, ok := byPath["template.toml"]; ok {
 		t.Error("template.toml should be excluded from output")
 	}
-	// .tmpl extension stripped, content rendered
 	if v := byPath["terraform/main.tf"]; v != `project = "my-dev"` {
 		t.Errorf("terraform/main.tf = %q", v)
 	}
-	// verbatim file copied
 	if v := byPath["static.txt"]; v != "verbatim content" {
 		t.Errorf("static.txt = %q", v)
 	}
@@ -265,8 +260,7 @@ func TestRenderAll_MissingKey(t *testing.T) {
 	dir := makeTemplateDir(t, map[string]string{
 		"bad.tf.tmpl": `{{ .Inputs.does_not_exist }}`,
 	})
-	// missingkey=error means this should fail
-	ctx := scaffold.BuildContext(map[string]string{}, "p", config.Topology{})
+	ctx := scaffold.BuildContext(map[string]string{}, "p", topology.Topology{})
 	_, err := scaffold.RenderAll(dir, ctx)
 	if err == nil {
 		t.Fatal("expected error for missing template key")
@@ -293,34 +287,33 @@ func makeFullTemplate(t *testing.T) *tmpl.Template {
 	}
 }
 
-func makeCfg(t *testing.T) *config.Config {
+func makeTopoFile(t *testing.T) *topology.File {
 	t.Helper()
-	return &config.Config{
-		Workspace: config.Workspace{Name: "my-org"},
-		Topologies: map[string]config.Topology{
+	return &topology.File{
+		Topologies: map[string]topology.Topology{
 			"primary": {
 				Default:      true,
 				Environments: map[string]string{"dev": "my-org-dev", "prod": "my-org-prod"},
-				Shared: config.SharedConfig{
+				Shared: topology.SharedConfig{
 					Project: "my-org-shared",
-					Region:  "us-central1",
-					ArtifactRegistry: config.ArtifactRegistryConfig{
-						Location:   "us-central1",
+					Region:  "us-east1",
+					ArtifactRegistry: topology.ArtifactRegistryConfig{
+						Location:   "us-east1",
 						Repository: "my-org-images",
 					},
 				},
 			},
 		},
-		Path: "/fake/groundwork.toml",
+		Path: "/fake/topologies.toml",
 	}
 }
 
 func TestScaffold_DryRun(t *testing.T) {
 	tt := makeFullTemplate(t)
-	cfg := makeCfg(t)
+	topos := makeTopoFile(t)
 
 	var out bytes.Buffer
-	err := scaffold.Scaffold(cfg, tt, scaffold.Options{
+	err := scaffold.Scaffold(topos, tt, scaffold.Options{
 		DryRun: true,
 		Vars:   []string{"service_name=my-api"},
 		Stdin:  strings.NewReader(""),
@@ -344,11 +337,11 @@ func TestScaffold_DryRun(t *testing.T) {
 
 func TestScaffold_WritesFiles(t *testing.T) {
 	tt := makeFullTemplate(t)
-	cfg := makeCfg(t)
+	topos := makeTopoFile(t)
 	outDir := t.TempDir()
 
 	var out bytes.Buffer
-	err := scaffold.Scaffold(cfg, tt, scaffold.Options{
+	err := scaffold.Scaffold(topos, tt, scaffold.Options{
 		OutDir: outDir,
 		Vars:   []string{"service_name=my-api"},
 		Stdin:  strings.NewReader("y\n"),
@@ -358,7 +351,6 @@ func TestScaffold_WritesFiles(t *testing.T) {
 		t.Fatalf("Scaffold: %v", err)
 	}
 
-	// Verify rendered file exists and has correct content.
 	mainTF, err := os.ReadFile(filepath.Join(outDir, "terraform", "main.tf"))
 	if err != nil {
 		t.Fatalf("read main.tf: %v", err)
@@ -373,11 +365,11 @@ func TestScaffold_WritesFiles(t *testing.T) {
 
 func TestScaffold_Abort(t *testing.T) {
 	tt := makeFullTemplate(t)
-	cfg := makeCfg(t)
+	topos := makeTopoFile(t)
 	outDir := t.TempDir()
 
 	var out bytes.Buffer
-	err := scaffold.Scaffold(cfg, tt, scaffold.Options{
+	err := scaffold.Scaffold(topos, tt, scaffold.Options{
 		OutDir: outDir,
 		Vars:   []string{"service_name=my-api"},
 		Stdin:  strings.NewReader("n\n"),
@@ -387,7 +379,6 @@ func TestScaffold_Abort(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// outDir should be empty — nothing written.
 	entries, _ := os.ReadDir(outDir)
 	if len(entries) != 0 {
 		t.Errorf("expected no files after abort, got %d", len(entries))
@@ -405,10 +396,10 @@ func TestScaffold_TopologyValidationFails(t *testing.T) {
 		Topology: tmpl.TopologyRequirement{Requires: []string{"environments.staging"}},
 		Dir:      dir,
 	}
-	cfg := makeCfg(t) // topology has dev+prod, not staging
+	topos := makeTopoFile(t) // topology has dev+prod, not staging
 
 	var out bytes.Buffer
-	err := scaffold.Scaffold(cfg, tt, scaffold.Options{
+	err := scaffold.Scaffold(topos, tt, scaffold.Options{
 		DryRun: true,
 		Stdin:  strings.NewReader(""),
 		Stdout: &out,

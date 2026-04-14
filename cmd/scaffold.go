@@ -7,6 +7,7 @@ import (
 	"github.com/philip-730/groundwork/internal/registry"
 	"github.com/philip-730/groundwork/internal/scaffold"
 	tmpl "github.com/philip-730/groundwork/internal/template"
+	"github.com/philip-730/groundwork/internal/topology"
 	"github.com/spf13/cobra"
 )
 
@@ -50,7 +51,13 @@ Run 'groundwork registry sync' first if you haven't already.`,
 			return err
 		}
 
-		return scaffold.Scaffold(cfg, t, scaffold.Options{
+		cacheDir := registry.CacheDir(cacheRoot, t.RegistryName)
+		topos, err := topology.Load(cacheDir)
+		if err != nil {
+			return fmt.Errorf("load topologies: %w", err)
+		}
+
+		return scaffold.Scaffold(topos, t, scaffold.Options{
 			TopologyName: scaffoldTopology,
 			OutDir:       scaffoldOut,
 			DryRun:       scaffoldDryRun,
