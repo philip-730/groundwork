@@ -1,0 +1,8 @@
+# build output
+/groundwork
+/gw
+
+# nix
+.direnv/
+result
+result-*
